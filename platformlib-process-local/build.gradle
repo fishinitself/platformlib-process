@@ -1,0 +1,16 @@
+configurations {
+    groovyLib
+}
+
+dependencies {
+    api project(':platformlib-process-api')
+    api group: 'net.java.dev.jna', name: 'jna-platform', version: project['jna.version']
+    groovyLib group: 'org.codehaus.groovy', name: 'groovy', version: '3.0.6'
+}
+
+
+processTestResources {
+    from (configurations.groovyLib) {
+        into 'groovy'
+    }
+}

@@ -1,0 +1,21 @@
+plugins {
+    id 'java-platform'
+}
+
+dependencies {
+    constraints {
+        api project(':platformlib-process-api')
+        api project(':platformlib-process-local')
+//        api project(':platformlib-process-ssh')
+    }
+}
+
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        platformibProcess(MavenPublication) {
+            from components.javaPlatform
+        }
+    }
+}
