@@ -3,9 +3,13 @@ plugins {
     id 'com.github.spotbugs' apply false
 }
 
+
 allprojects {
     group = 'com.platformlib'
     version = project.findProperty('build.version') ?: '1.0-SNAPSHOT'
+    repositories {
+        mavenCentral()
+    }
 }
 
 def subprojectsWithoutSources = [
@@ -19,6 +23,7 @@ configure(subprojects.findAll { !(it.name in subprojectsWithoutSources) }) {
     apply plugin: 'pmd'
     apply plugin: 'checkstyle'
     apply plugin: 'jacoco'
+    apply plugin: 'signing'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -85,7 +90,6 @@ configure(subprojects.findAll { !(it.name in subprojectsWithoutSources) }) {
         useJUnitPlatform()
         systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
         finalizedBy jacocoTestReport
-        //testLogging.showStandardStreams = true
         systemProperties = [
             'junit.jupiter.execution.parallel.enabled': true
         ]
@@ -94,18 +98,53 @@ configure(subprojects.findAll { !(it.name in subprojectsWithoutSources) }) {
     java {
         withJavadocJar()
         withSourcesJar()
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     apply plugin: 'maven-publish'
+
+    signing {
+        sign publishing.publications
+    }
 
     publishing {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
+                pom {
+                    name = 'platformlib-process'
+                    description = 'Process management library'
+                    url = 'https://github.com/platformlib/platformlib-process'
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'vicspbsky'
+                            name = 'Viktor Ivanov'
+                            email = 'vicspbsky@gmail.com'
+                        }
+                    }
+                    scm {
+                        connection = 'https://github.com/platformlib/platformlib-process'
+                        developerConnection = 'scm:https://github.com/platformlib/platformlib-process.git'
+                        url = 'scm:https://github.com/platformlib/platformlib-process.git'
+                    }
+
+                }
             }
         }
         repositories {
             maven {
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                credentials {
+                    username sonatypeUsername
+                    password sonatypePassword
+                }
             }
         }
     }

@@ -6,7 +6,6 @@ dependencies {
     constraints {
         api project(':platformlib-process-api')
         api project(':platformlib-process-local')
-//        api project(':platformlib-process-ssh')
     }
 }
 
@@ -16,6 +15,15 @@ publishing {
     publications {
         platformibProcess(MavenPublication) {
             from components.javaPlatform
+        }
+    }
+    repositories {
+        maven {
+            url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            credentials {
+                username sonatypeUsername
+                password sonatypePassword
+            }
         }
     }
 }
