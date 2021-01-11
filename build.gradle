@@ -102,6 +102,10 @@ configure(subprojects.findAll { !(it.name in subprojectsWithoutSources) }) {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
+    compileJava {
+        options.release = 8
+    }
+
     apply plugin: 'maven-publish'
 
     signing {
