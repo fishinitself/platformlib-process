@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Local process executor.
@@ -57,6 +58,10 @@ public class LocalProcessExecutor extends DefaultProcessExecutor {
     @SuppressWarnings({"PMD.ConfusingTernary", "PMD.AvoidCatchingThrowable"})
     @Override
     public OperationSystemProcess execute(final Object... commandAndArguments) {
+        Objects.requireNonNull(commandAndArguments);
+        for (int i = 0; i < commandAndArguments.length; i++) {
+            Objects.requireNonNull(commandAndArguments[i], "Command line/argument is null at " + i);
+        }
         final ProcessBuilder processBuilder = new ProcessBuilder(getUnmaskedCommandAndArguments(commandAndArguments));
         getWorkDirectory().ifPresent(workDirectory -> processBuilder.directory(Paths.get(workDirectory).toFile()));
         if (!getEnvVariables().isEmpty()) {

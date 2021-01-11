@@ -17,13 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -164,12 +158,16 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
 
     @Override
     public DefaultProcessBuilder command(final String command) {
-        this.command = command;
+        this.command = Objects.requireNonNull(command);
         return this;
     }
 
     @Override
     public DefaultProcessBuilder commandAndArguments(final Object... commandAndArguments) {
+        Objects.requireNonNull(commandAndArguments);
+        for (int i = 0; i < commandAndArguments.length; i++) {
+            Objects.requireNonNull(commandAndArguments[i], "Command line/arguments is null at " + i);
+        }
         Collections.addAll(this.commandAndArguments, commandAndArguments);
         return this;
     }
