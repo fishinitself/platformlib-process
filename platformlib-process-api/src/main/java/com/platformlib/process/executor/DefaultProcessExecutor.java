@@ -14,7 +14,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +26,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -125,6 +129,33 @@ public abstract class DefaultProcessExecutor implements ProcessExecutor {
 
     protected Optional<ProcessDryRunConfiguration> getDryRunConfiguration() {
         return processConfiguration.getDryRunConfiguration();
+    }
+
+    /**
+     * Get command and argument to execute.
+     * The command could be changed because of configuration, e.g. extension auto detection
+     * @param fileSystem file system where the command should be executed
+     * @param commandLineAndArguments command and arguments to execute
+     * @return Returns unmasked command line and argument to execute
+     */
+    protected List<String> getCommandAndArgumentsToExecute(final FileSystem fileSystem, final Collection<String> commandLineAndArguments) {
+        final List<String> cla = new ArrayList<>(commandLineAndArguments);
+        final String command = cla.get(0);
+        if (!command.contains("/") && !command.contains("\\")) {
+            return cla;
+        }
+        for (final Supplier<String> extensionSupplier: processConfiguration.getExtensionMappers()) {
+            final String extension = extensionSupplier.get();
+            if (extension == null) {
+                continue;
+            }
+            if (Files.isRegularFile(fileSystem.getPath(command + "." + extension))) {
+                LOGGER.debug("Map extension {} provided by {}", extension, extensionSupplier);
+                cla.set(0, command + "." + extension);
+                break;
+            }
+        }
+        return cla;
     }
 
     /**

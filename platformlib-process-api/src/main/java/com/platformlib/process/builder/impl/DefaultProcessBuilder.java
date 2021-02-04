@@ -28,6 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.platformlib.process.builder.ProcessBuilder;
 
 /**
@@ -79,6 +83,10 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
      * Any non standard object instances given as command line arguments which don't support ready to use {@link Object#toString()} method should be mapped to argument processor function which is used for converting it into {@link String} for executed command line.
      */
     private final Map<Class<?>, Function<Object, String>> argumentFunctionsMap = new ConcurrentHashMap<>();
+
+    private final Collection<Supplier<String>> extensionSuppliers = new ArrayList<>();
+
+    protected abstract boolean isWindowsPlatform();
 
     @Override
     public DefaultProcessBuilder name(final String name) {
@@ -330,5 +338,32 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
     @Override
     public Optional<ProcessLoggerConfiguration> getProcessLoggerConfiguration() {
         return Optional.ofNullable(processLoggerConfigurator);
+    }
+
+    @Override
+    public ProcessBuilder extensionSupplier(final Supplier<String> supplier) {
+        extensionSuppliers.add(supplier);
+        return this;
+    }
+
+    @Override
+    public Collection<Supplier<String>> getExtensionMappers() {
+        if (isWindowsPlatform()) {
+            return Stream.concat(extensionSuppliers.stream(), winExtensionMapping.stream().map(DefaultExtensionSupplier::new)).collect(Collectors.toList());
+        }
+        return Stream.concat(extensionSuppliers.stream(), nixExtensionMapping.stream().map(DefaultExtensionSupplier::new)).collect(Collectors.toList());
+    }
+
+    private static final class DefaultExtensionSupplier implements Supplier<String> {
+        private final String extension;
+
+        private DefaultExtensionSupplier(final String extension) {
+            this.extension = extension;
+        }
+
+        @Override
+        public String get() {
+            return extension;
+        }
     }
 }

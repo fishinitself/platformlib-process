@@ -30,10 +30,15 @@ public class LocalProcessBuilderImpl extends DefaultProcessBuilder implements Lo
             throw new IllegalStateException("Mutual exclusive set command and using current java");
         }
         if (useCurrentJava) {
-            final String javaCommand = System.getProperties().getProperty("java.home") + File.separator + "bin" + File.separator + "java" + (";".equals(File.pathSeparator) ? ".exe" : "");
+            final String javaCommand = System.getProperties().getProperty("java.home") + File.separator + "bin" + File.separator + "java" + (isWindowsPlatform() ? ".exe" : "");
             LOGGER.trace("Use as command current java {}", javaCommand);
             command(javaCommand);
         }
         return new LocalProcessExecutor(this);
+    }
+
+    @Override
+    protected boolean isWindowsPlatform() {
+        return ";".equals(File.pathSeparator);
     }
 }

@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Process configuration.
@@ -122,5 +123,7 @@ public interface ProcessConfiguration {
      * @return Returns process logger configuration
      */
     Optional<ProcessLoggerConfiguration> getProcessLoggerConfiguration();
+
+    Collection<Supplier<String>> getExtensionMappers();
 
 }

@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -57,7 +58,7 @@ public class LocalProcessExecutor extends DefaultProcessExecutor {
     @SuppressWarnings({"PMD.ConfusingTernary", "PMD.AvoidCatchingThrowable"})
     @Override
     public OperationSystemProcess execute(final Object... commandAndArguments) {
-        final ProcessBuilder processBuilder = new ProcessBuilder(getUnmaskedCommandAndArguments(commandAndArguments));
+        final ProcessBuilder processBuilder = new ProcessBuilder(getCommandAndArgumentsToExecute(FileSystems.getDefault(), getUnmaskedCommandAndArguments(commandAndArguments)));
         getWorkDirectory().ifPresent(workDirectory -> processBuilder.directory(Paths.get(workDirectory).toFile()));
         if (!getEnvVariables().isEmpty()) {
             processBuilder.environment().putAll(getEnvVariables());
