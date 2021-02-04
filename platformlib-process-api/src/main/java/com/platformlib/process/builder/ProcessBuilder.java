@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Process builder.
@@ -72,6 +73,14 @@ public interface ProcessBuilder {
      * @return Returns this process configurator
      */
     ProcessBuilder mapExeExtension();
+
+    /**
+     * Configure extension supplier.
+     * The configured supplier will be called if auto-detection is needed, e.g. when command extension depends on platform (on windows is .cmd extension, on NIX no extension).
+     * @param supplier Mapper function, first parameter true if windows platform, false non windows
+     * @return Returns this process builder
+     */
+    ProcessBuilder extensionSupplier(Supplier<String> supplier);
 
     /**
      * Set process standard output consumer.
