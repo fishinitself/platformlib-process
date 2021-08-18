@@ -1,6 +1,6 @@
 pluginManagement {
     plugins {
-        id 'com.github.spotbugs'       version '4.6.0'
+        id 'com.github.spotbugs'       version '4.6.2'
         id 'org.jetbrains.kotlin.jvm'  version settings['kotlin.version']
     }
 }
@@ -10,4 +10,5 @@ rootProject.name = 'platformlib-process'
 
 include ':platformlib-process-api'
 include ':platformlib-process-local'
+include ':platformlib-process-ssh'
 include ':platformlib-process-bom'

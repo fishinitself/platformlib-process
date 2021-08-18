@@ -11,6 +11,9 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
@@ -66,4 +70,17 @@ class LocalProcessTest {
         final ProcessInstance processInstance = exitCodeProcessBuilder.build().execute(exitCode).toCompletableFuture().join();
         assertEquals(exitCode, processInstance.getExitCode());
     }
+
+    @Test
+    void testWorkDirectory() throws IOException {
+        final Path tempDirectory = Files.createTempDirectory("local-process-tmp-");
+        try {
+            final ProcessInstance processInstance = LocalGroovyCommand.newGroovyCommand("work-directory.groovy").workDirectory(tempDirectory).build().execute().toCompletableFuture().join();
+            assertFalse(processInstance.getStdOut().isEmpty());
+            assertEquals(tempDirectory.toAbsolutePath().toString(), processInstance.getStdOut().iterator().next());
+        } finally {
+            Files.delete(tempDirectory);
+        }
+    }
+
 }

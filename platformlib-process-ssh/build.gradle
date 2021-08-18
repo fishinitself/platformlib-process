@@ -1,0 +1,12 @@
+plugins {
+    id 'java-test-fixtures'
+}
+
+dependencies {
+    api project(':platformlib-process-api')
+    api group: 'org.apache.sshd', name: 'sshd-core', version: project['apache-sshd.version']
+    api group: 'org.apache.sshd', name: 'sshd-sftp', version: project['apache-sshd.version']
+    testImplementation project(":platformlib-process-local")
+    testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: project['testcontainers.version']
+    testFixturesImplementation project(":platformlib-process-local")
+}

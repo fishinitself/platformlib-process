@@ -110,6 +110,7 @@ configure(subprojects.findAll { !(it.name in subprojectsWithoutSources) }) {
 
     signing {
         sign publishing.publications
+        required { project.version != '1.0-SNAPSHOT' }
     }
 
     publishing {
