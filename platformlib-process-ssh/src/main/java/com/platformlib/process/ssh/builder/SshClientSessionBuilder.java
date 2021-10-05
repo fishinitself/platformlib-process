@@ -15,6 +15,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.session.SessionHeartbeatController;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.slf4j.Logger;
@@ -108,8 +109,9 @@ public class SshClientSessionBuilder {
                 CoreModuleProperties.REKEY_PACKETS_LIMIT.set(client, -1L);
                 CoreModuleProperties.REKEY_BLOCKS_LIMIT.set(client, -1L);
             }
-        }
 
+            sshClientConfiguration.getHeartbeatConfiguration().getInterval().ifPresent(heartBeatInterval -> client.setSessionHeartbeat(SessionHeartbeatController.HeartbeatType.IGNORE, heartBeatInterval));
+        }
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
         client.start();
         final ClientSession session;

@@ -1,6 +1,7 @@
 package com.platformlib.process.ssh.configuration;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 
 public class SshClientConfiguration {
@@ -12,6 +13,7 @@ public class SshClientConfiguration {
     private final SshTcpConfiguration tcpConfiguration = new SshTcpConfiguration();
     private final SshSftpConfiguration sftpConfiguration = new SshSftpConfiguration();
     private final SshSocketConfiguration socketConfiguration = new SshSocketConfiguration();
+    private final HeartbeatConfiguration heartbeatConfiguration = new HeartbeatConfiguration();
 
     public SshClientConfiguration() {
     }
@@ -52,6 +54,18 @@ public class SshClientConfiguration {
         return socketConfiguration;
     }
 
+    public HeartbeatConfiguration getHeartbeatConfiguration() {
+        return heartbeatConfiguration;
+    }
+
+    public void disableKeyReExchange() {
+        keyReExchange = false;
+    }
+
+    public boolean isKeyReExchangeDisabled() {
+        return !keyReExchange;
+    }
+
     public static final class SshTcpConfiguration {
         private Boolean noDelay;
 
@@ -62,14 +76,6 @@ public class SshClientConfiguration {
         public void setNoDelay(boolean noDelay) {
             this.noDelay = noDelay;
         }
-    }
-
-    public void disableKeyReExchange() {
-        keyReExchange = false;
-    }
-
-    public boolean isKeyReExchangeDisabled() {
-        return !keyReExchange;
     }
 
     public static final class SshSftpConfiguration {
@@ -132,4 +138,15 @@ public class SshClientConfiguration {
         }
     }
 
+    public static final class HeartbeatConfiguration {
+        private Duration interval;
+
+        public Optional<Duration> getInterval() {
+            return Optional.ofNullable(interval);
+        }
+
+        public void setInterval(final Duration interval) {
+            this.interval = Objects.requireNonNull(interval);
+        }
+    }
 }
