@@ -149,7 +149,6 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
     private void consumeLine(final String name, final String line) {
         if (processOutputLoggerConfiguration.getLogger().orElse(LOGGER) == LOGGER && LOGGER.isTraceEnabled()) {
             LOGGER.trace("[{}] Process output: {}", name, line);
-            return;
         }
         if (!processOutputLoggerConfiguration.getHeadSize().isPresent() && !processOutputLoggerConfiguration.getTailSize().isPresent()) {
             processOutputLoggerConfiguration.getLogger().ifPresent(logger -> logger.debug("[{}] Process output: {}", name, line));

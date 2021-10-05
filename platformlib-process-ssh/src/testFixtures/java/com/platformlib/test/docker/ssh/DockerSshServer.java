@@ -68,6 +68,8 @@ public class DockerSshServer {
             if (dockerProcess.toCompletableFuture().isDone()) {
                 throw new IllegalStateException("Fail to start docker container");
             }
+            //TODO Check for open port instead of waiting
+            Thread.sleep(1000 );
             LOGGER.debug("The docker container has been started");
         } catch (final InterruptedException interruptedException) {
             throw new IllegalStateException("Docker container starting gas been interrupted", interruptedException);

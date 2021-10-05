@@ -6,7 +6,6 @@ import com.platformlib.process.configurator.ProcessOutputConfigurator;
 import com.platformlib.process.core.MaskedPassword;
 import com.platformlib.process.ssh.factory.SshProcessBuilderFactory;
 import com.platformlib.process.ssh.util.SshOsSpecs;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

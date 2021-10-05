@@ -109,7 +109,7 @@ public class SshProcessExecutor extends DefaultProcessExecutor {
                             LOGGER.error("The is no exit code received in {} ms", Duration.ofNanos(processThreadStartNanoTime - System.nanoTime()).toMillis());
                             operationSystemProcess.completeExceptionally(new IOException("There is no SSH exit status"));
                         } else {
-                            LOGGER.debug("The process execution took {} ms, exit code {}", Duration.ofNanos(processThreadStartNanoTime - System.nanoTime()).toMillis(), channelExec.getExitStatus());
+                            LOGGER.debug("The process execution took {} ms, exit code {}", Duration.ofNanos(System.nanoTime() - processThreadStartNanoTime).toMillis(), channelExec.getExitStatus());
                             operationSystemProcess.complete(new DefaultProcessInstance(channelExec.getExitStatus(), getProcessStdOut(), getProcessStdErr()));
                         }
                     } else if (channelEvents.contains(ClientChannelEvent.EXIT_SIGNAL)) {

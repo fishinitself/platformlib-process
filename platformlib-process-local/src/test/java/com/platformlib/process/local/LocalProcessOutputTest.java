@@ -2,6 +2,8 @@ package com.platformlib.process.local;
 
 import com.platformlib.process.api.ProcessInstance;
 import com.platformlib.process.builder.ProcessBuilder;
+import com.platformlib.process.configurator.ProcessOutputConfigurator;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -38,5 +40,15 @@ class LocalProcessOutputTest {
                 Arguments.of(5, 0),
                 Arguments.of(5, 5)
         );
+    }
+
+    @Test
+    void testSymbolsInStdInCaseOfNonZeroExitCode() {
+        final ProcessInstance processInstance = LocalGroovyCommand.newGroovyCommand("std-output-with-1-exit-code.groovy")
+                .processInstance(ProcessOutputConfigurator::unlimited)
+                .build().execute().toCompletableFuture().join();
+        assertThat(processInstance.getExitCode()).isEqualTo(1);
+        assertThat(processInstance.getStdOut()).containsExactly("A");
+        assertThat(processInstance.getStdErr()).containsExactly("B");
     }
 }
