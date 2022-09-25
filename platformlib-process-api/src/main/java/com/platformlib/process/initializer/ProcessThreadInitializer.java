@@ -2,10 +2,10 @@ package com.platformlib.process.initializer;
 
 import com.platformlib.process.enums.ProcessThreadType;
 
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Process's thread initializer.
  */
-public interface ProcessThreadInitializer extends BiConsumer<ProcessThreadType, String> {
+public interface ProcessThreadInitializer extends Consumer<ProcessThreadType> {
 }

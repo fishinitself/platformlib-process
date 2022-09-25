@@ -6,6 +6,7 @@ import com.platformlib.process.configurator.ProcessOutputConfigurator;
 import com.platformlib.process.core.MaskedPassword;
 import com.platformlib.process.ssh.factory.SshProcessBuilderFactory;
 import com.platformlib.process.ssh.util.SshOsSpecs;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ public class SshProcessTest extends AbstractProcessSshTest {
     }
 
     @Test
+    @DisplayName("Test setting work directory")
     void testWorkDirectory() {
         final ProcessInstance processInstance = sshExec(builder -> builder.workDirectory("/tmp").command("pwd"));
         assertThat(processInstance.getStdOut()).containsExactly("/tmp");

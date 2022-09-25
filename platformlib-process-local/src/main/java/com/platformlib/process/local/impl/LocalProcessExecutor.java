@@ -6,6 +6,7 @@ import com.platformlib.process.configuration.dryrun.ProcessDryRunConfiguration;
 import com.platformlib.process.configuration.logger.ProcessLoggerConfiguration;
 import com.platformlib.process.core.AsyncProcessOutputListener;
 import com.platformlib.process.core.DefaultProcessInstance;
+import com.platformlib.process.enums.ProcessThreadType;
 import com.platformlib.process.executor.DefaultProcessExecutor;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Kernel32;
@@ -46,12 +47,12 @@ public class LocalProcessExecutor extends DefaultProcessExecutor {
         super(processConfiguration);
         stdOutListener = new AsyncProcessOutputListener(
                 getExecutor(),
-                "stdout",
+                ProcessThreadType.STDOUT_LISTENER,
                 processConfiguration.getProcessLoggerConfiguration().flatMap(ProcessLoggerConfiguration::getLoggerStdOutConfiguration).orElse(null),
                 getProcessStdOut());
         stdErrListener = new AsyncProcessOutputListener(
                 getExecutor(),
-                "stderr",
+                ProcessThreadType.STDERR_LISTENER,
                 processConfiguration.getProcessLoggerConfiguration().flatMap(ProcessLoggerConfiguration::getLoggerStdErrConfiguration).orElse(null),
                 getProcessStdErr());
     }

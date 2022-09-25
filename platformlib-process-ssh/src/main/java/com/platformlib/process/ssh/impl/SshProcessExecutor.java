@@ -6,6 +6,7 @@ import com.platformlib.process.configuration.logger.ProcessLoggerConfiguration;
 import com.platformlib.process.core.AsyncProcessOutputListener;
 import com.platformlib.process.core.DefaultOperationSystemProcess;
 import com.platformlib.process.core.DefaultProcessInstance;
+import com.platformlib.process.enums.ProcessThreadType;
 import com.platformlib.process.exception.ProcessConfigurationException;
 import com.platformlib.process.executor.DefaultProcessExecutor;
 import com.platformlib.process.ssh.specification.SshOsSpec;
@@ -71,12 +72,12 @@ public class SshProcessExecutor extends DefaultProcessExecutor {
        final String commandToExecute = String.join(" ", sshCommandAndArguments);
         stdOutListener = new AsyncProcessOutputListener(
                 getExecutor(),
-                "stdout",
+                ProcessThreadType.STDOUT_LISTENER,
                 processConfiguration.getProcessLoggerConfiguration().flatMap(ProcessLoggerConfiguration::getLoggerStdOutConfiguration).orElse(null),
                 getProcessStdOut());
         stdErrListener = new AsyncProcessOutputListener(
                 getExecutor(),
-                "stderr",
+                ProcessThreadType.STDERR_LISTENER,
                 processConfiguration.getProcessLoggerConfiguration().flatMap(ProcessLoggerConfiguration::getLoggerStdErrConfiguration).orElse(null),
                 getProcessStdErr());
         getExecutor().execute(() -> {

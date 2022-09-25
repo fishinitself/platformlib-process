@@ -3,8 +3,10 @@ package com.platformlib.process.local;
 import com.platformlib.process.api.OperationSystemProcess;
 import com.platformlib.process.api.ProcessInstance;
 import com.platformlib.process.builder.ProcessBuilder;
+import com.platformlib.process.enums.ProcessThreadType;
 import com.platformlib.process.factory.ProcessBuilders;
 import com.platformlib.process.local.specification.LocalProcessSpec;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
@@ -14,18 +16,24 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
@@ -39,7 +47,6 @@ class LocalProcessTest {
 
     /**
      * Spawn few process for fail fast testing concurrency.
-     * Start fastest resourceless process.
      */
     @Test
     @Timeout(value = 5, unit = TimeUnit.MINUTES)
@@ -72,15 +79,46 @@ class LocalProcessTest {
     }
 
     @Test
+    @DisplayName("Test setting work directory")
     void testWorkDirectory() throws IOException {
         final Path tempDirectory = Files.createTempDirectory("local-process-tmp-");
         try {
-            final ProcessInstance processInstance = LocalGroovyCommand.newGroovyCommand("work-directory.groovy").workDirectory(tempDirectory).build().execute().toCompletableFuture().join();
-            assertFalse(processInstance.getStdOut().isEmpty());
-            assertEquals(tempDirectory.toAbsolutePath().toString(), processInstance.getStdOut().iterator().next());
+            final ProcessInstance processInstance = LocalGroovyCommand
+                    .newGroovyCommand("work-directory.groovy")
+                    .workDirectory(tempDirectory)
+                    .build()
+                    .execute()
+                    .toCompletableFuture()
+                    .join();
+            assertThat(processInstance.getStdOut()).containsExactly(tempDirectory.toAbsolutePath().toString());
         } finally {
             Files.delete(tempDirectory);
         }
     }
 
+    @Test
+    @DisplayName("Verify that there is no delay in case of unknown command")
+    void testProcessStartExceptionDelay() {
+        final ExecutorService executor = Executors.newFixedThreadPool(4);
+        final ProcessBuilder processBuilder = ProcessBuilders.newProcessBuilder(LocalProcessSpec.LOCAL_COMMAND).command("non-existed-command-").withExecutor(executor);
+        assertTimeout(Duration.ofSeconds(5), () ->
+            assertTrue(processBuilder.build().execute().toCompletableFuture().isCompletedExceptionally())
+        );
+        assertThat(executor.shutdownNow()).describedAs("There should be no run threads").isEmpty();
+    }
+
+    @Test
+    @DisplayName("Verify std out/err thread initializer call")
+    void testProcessThreadStartListener() throws ExecutionException, InterruptedException {
+        final Map<ProcessThreadType, AtomicInteger> threadsData = new ConcurrentHashMap<>();
+        final ProcessBuilder processBuilder = ProcessBuilders
+                .newProcessBuilder(LocalProcessSpec.LOCAL_COMMAND)
+                .logger(loggerConf -> loggerConf.onProcessThreadStart(processThreadType -> threadsData.computeIfAbsent(processThreadType, ptt -> new AtomicInteger(0)).incrementAndGet()))
+                .command("echo");
+        assertThat(processBuilder.build().execute().toCompletableFuture().get().getExitCode()).isEqualTo(0);
+        assertThat(threadsData).size().isEqualTo(2);
+        assertThat(threadsData).containsOnlyKeys(ProcessThreadType.STDOUT_LISTENER, ProcessThreadType.STDERR_LISTENER);
+        assertThat(threadsData.get(ProcessThreadType.STDOUT_LISTENER).get()).isEqualTo(1);
+        assertThat(threadsData.get(ProcessThreadType.STDERR_LISTENER).get()).isEqualTo(1);
+    }
 }

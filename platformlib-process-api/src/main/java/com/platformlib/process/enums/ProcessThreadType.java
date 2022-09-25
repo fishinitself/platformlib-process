@@ -1,8 +1,17 @@
 package com.platformlib.process.enums;
 
 public enum ProcessThreadType {
-    EXECUTION,
-    STDOUT_LISTENER,
-    STDERR_LISTENER,
-    STDIN_LISTENER
+    STDOUT_LISTENER("stdout"),
+    STDERR_LISTENER("stderr"),
+    STDIN_LISTENER("stdin");
+
+    private final String threadName;
+
+    ProcessThreadType(final String threadName) {
+        this.threadName = threadName;
+    }
+
+    public String getThreadName() {
+        return threadName;
+    }
 }

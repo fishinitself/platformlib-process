@@ -72,7 +72,7 @@ public class DockerSshServer {
             Thread.sleep(1000 );
             LOGGER.debug("The docker container has been started");
         } catch (final InterruptedException interruptedException) {
-            throw new IllegalStateException("Docker container starting gas been interrupted", interruptedException);
+            throw new IllegalStateException("Docker container starting has been interrupted", interruptedException);
         }
 
 /*

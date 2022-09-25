@@ -1,6 +1,7 @@
 package com.platformlib.process.core;
 
 import com.platformlib.process.configuration.logger.ProcessOutputLoggerConfiguration;
+import com.platformlib.process.enums.ProcessThreadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +30,6 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
     //TODO Make it configurable
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
-    private final Executor executor;
-    private final String name;
-
     private final Function<String, String> stdOutFirstLineFunction;
     private boolean firstLineConsumed;
 
@@ -41,21 +39,21 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
     private final ProcessOutputLoggerConfiguration processOutputLoggerConfiguration;
     private final CycledBuffer<String> tailBuffer;
     private int headProcessed;
+    private final ProcessThreadType processThreadType;
 
     public AsyncProcessOutputListener(final Executor executor,
-                                      final String name,
+                                      final ProcessThreadType processThreadType,
                                       final ProcessOutputLoggerConfiguration processOutputLoggerConfiguration,
                                       final DefaultProcessOutput processOutput) {
-        this(executor, name, processOutputLoggerConfiguration, processOutput, null);
+        this(executor, processThreadType, processOutputLoggerConfiguration, processOutput, null);
     }
 
     public AsyncProcessOutputListener(final Executor executor,
-                                      final String name,
+                                      final ProcessThreadType processThreadType,
                                       final ProcessOutputLoggerConfiguration processOutputLoggerConfiguration,
                                       final DefaultProcessOutput processOutput,
                                       final Function<String, String> stdOutFirstLineFunction) {
-        this.executor = executor;
-        this.name = name;
+        this.processThreadType = processThreadType;
         this.processOutputLoggerConfiguration = Objects.requireNonNull(processOutputLoggerConfiguration);
         this.processOutput = processOutput;
         executor.execute(this);
@@ -71,22 +69,23 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
 
     @Override
     public void run() {
+        processOutputLoggerConfiguration.getProcessThreadInitializer().ifPresent(initializer -> initializer.accept(processThreadType));
         final ByteBuffer byteBuffer = ByteBuffer.allocate(BUFFER_SIZE);
         try {
             runLatch.await();
-            LOGGER.trace("[{}] Start process output listening", name);
+            LOGGER.trace("[{}] Start process output listening", processThreadType.getThreadName());
             while (inputStream != null) {
                 final int len = inputStream.read(readBytesBuffer);
                 if (len < 0) {
                     byteBuffer.flip();
                     if (byteBuffer.hasRemaining()) {
-                        consumeLine(name, byteBuffer);
+                        consumeLine(processThreadType.getThreadName(), byteBuffer);
                     }
                     byteBuffer.clear();
                     break;
                 }
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("[{}] Read {} byte(s) {}", name, len, Arrays.copyOf(readBytesBuffer, len));
+                    LOGGER.trace("[{}] Read {} byte(s) {}", processThreadType.getThreadName(), len, Arrays.copyOf(readBytesBuffer, len));
                 }
                 if (len > 0) {
                     //TODO We can stuck here if the receiver will not read. Do asynchronous call here
@@ -102,12 +101,12 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
                                 final String firstLine =  getStringLine(byteBuffer);
                                 final String appliedLine = stdOutFirstLineFunction.apply(firstLine);
                                 if (appliedLine != null) {
-                                    consumeLine(name, appliedLine);
+                                    consumeLine(processThreadType.getThreadName(), appliedLine);
                                 } else {
                                     LOGGER.trace("First line consumer accepted: {}", firstLine);
                                 }
                             } else {
-                                consumeLine(name, byteBuffer);
+                                consumeLine(processThreadType.getThreadName(), byteBuffer);
                             }
                         byteBuffer.clear();
                     } else if (readBytesBuffer[i] != '\r') {
@@ -117,7 +116,7 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
                             byteBuffer.flip();
                             final String line = getStringLine(byteBuffer) + "<<No new line break>>";
                             LOGGER.warn(line);
-                            consumeLine(name, line);
+                            consumeLine(processThreadType.getThreadName(), line);
                             byteBuffer.clear();
                             byteBuffer.put(readBytesBuffer[i]);
                         }
@@ -125,15 +124,15 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
                 }
             }
         } catch (final RuntimeException | IOException | InterruptedException exception) {
-            LOGGER.error("[" + name + "] Fail to read channel", exception);
+            LOGGER.error("[" + processThreadType.getThreadName() + "] Fail to read channel", exception);
             byteBuffer.flip();
             if (byteBuffer.hasRemaining()) {
-                consumeLine(name, byteBuffer);
+                consumeLine(processThreadType.getThreadName(), byteBuffer);
             }
             byteBuffer.clear();
         } finally {
             completeLatch.countDown();
-            LOGGER.trace("[{}] Stop process output listening", name);
+            LOGGER.trace("[{}] Stop process output listening", processThreadType.getThreadName());
         }
     }
 
@@ -165,15 +164,15 @@ public class AsyncProcessOutputListener implements Runnable, Closeable {
 
     @Override
     public void close() throws IOException {
+        runLatch.countDown();
         try {
             completeLatch.await(SHUTDOWN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
         } catch (final InterruptedException interruptedException) {
-            processOutputLoggerConfiguration.getLogger().orElse(LOGGER).debug("[{}] Process output listener wasn't shut down due to timeout", name);
+            processOutputLoggerConfiguration.getLogger().orElse(LOGGER).debug("[{}] Process output listener wasn't shut down due to timeout", processThreadType.getThreadName());
         }
         if (tailBuffer != null) {
-            tailBuffer.getValues().forEach(line -> processOutputLoggerConfiguration.getLogger().orElse(LOGGER).debug("[{}] Process output: {}", name, line));
+            tailBuffer.getValues().forEach(line -> processOutputLoggerConfiguration.getLogger().orElse(LOGGER).debug("[{}] Process output: {}", processThreadType.getThreadName(), line));
         }
-        runLatch.countDown();
         //TODO The same thing with stuck, make this call asynchronously
         //TODO be careful when closing, catch exception and process it correctly
         for (final OutputStream outputStream: processOutput.getOutputStreams()) {

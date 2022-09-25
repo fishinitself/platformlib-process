@@ -6,7 +6,7 @@
             </pattern>
         </encoder>
     </appender>
-    <logger name="com.platformlib" level="DEBUG" />
+    <logger name="com.platformlib" level="TRACE" />
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

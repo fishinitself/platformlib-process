@@ -71,5 +71,11 @@ public class DefaultProcessLoggerConfigurator extends DefaultProcessOutputLogger
     @Override
     public void onProcessThreadStart(final ProcessThreadInitializer onProcessThreadStartPayload) {
         this.processThreadInitializer = onProcessThreadStartPayload;
+        if (!stdOutLoggerConfigurator.getProcessThreadInitializer().isPresent()) {
+            stdOutLoggerConfigurator.processThreadInitializer(onProcessThreadStartPayload);
+        }
+        if (!stdErrLoggerConfigurator.getProcessThreadInitializer().isPresent()) {
+            stdErrLoggerConfigurator.processThreadInitializer(onProcessThreadStartPayload);
+        }
     }
 }
