@@ -30,7 +30,7 @@ import com.platformlib.process.builder.ProcessBuilder;
 
 /**
  * Default process builder.
- * Implements most of methods required for process building.
+ * Implements methods required for process building.
  */
 @SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessConfiguration {
@@ -63,6 +63,8 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
     private final DefaultProcessLoggerConfigurator processLoggerConfigurator = new DefaultProcessLoggerConfigurator();
     private final DefaultProcessInstanceConfigurator processInstanceConfigurator = new DefaultProcessInstanceConfigurator();
 
+    private boolean executeInWorkDirectory = false;
+
     /**
      * Map of argument class and function to apply to it before putting value into logging.
      * There functions are applied on arguments before their logging.
@@ -74,7 +76,7 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
     /**
      * Map of argument class and functions to apply to it before adding to command line argument.
      * These functions are used for creating command line for execution.
-     * Any non standard object instances given as command line arguments which don't support ready to use {@link Object#toString()} method should be mapped to argument processor function which is used for converting it into {@link String} for executed command line.
+     * Any non-standard object instances given as command line arguments which don't support ready to use {@link Object#toString()} method should be mapped to argument processor function which is used for converting it into {@link String} for executed command line.
      */
     private final Map<Class<?>, Function<Object, String>> argumentFunctionsMap = new ConcurrentHashMap<>();
 
@@ -97,6 +99,12 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
     @Override
     public DefaultProcessBuilder workDirectory(final Path workDirectory) {
         this.workDirectory = workDirectory;
+        return this;
+    }
+
+    @Override
+    public ProcessBuilder executeInWorkDirectory() {
+        executeInWorkDirectory = true;
         return this;
     }
 
@@ -245,6 +253,11 @@ public abstract class DefaultProcessBuilder implements ProcessBuilder, ProcessCo
     @Override
     public Optional<String> getWorkDirectory() {
         return Optional.ofNullable(workDirectory).map(Object::toString);
+    }
+
+    @Override
+    public boolean isExecuteInWorkDirectory() {
+        return executeInWorkDirectory;
     }
 
     @Override

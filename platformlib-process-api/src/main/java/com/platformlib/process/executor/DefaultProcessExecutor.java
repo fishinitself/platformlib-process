@@ -16,6 +16,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -123,6 +124,10 @@ public abstract class DefaultProcessExecutor implements ProcessExecutor {
         return processConfiguration.getWorkDirectory();
     }
 
+    protected boolean isExecuteInWorkDirectory() {
+        return processConfiguration.isExecuteInWorkDirectory();
+    }
+
     protected ProcessDestroyerHandler getProcessDestroyerHandler() {
         return processConfiguration.getProcessDestroyerHandler().orElse(null);
     }
@@ -133,28 +138,52 @@ public abstract class DefaultProcessExecutor implements ProcessExecutor {
 
     /**
      * Get command and argument to execute.
-     * The command could be changed because of configuration, e.g. extension auto detection
+     * The command could be changed because of configuration, e.g. extension auto-detection
      * @param fileSystem file system where the command should be executed
      * @param commandLineAndArguments command and arguments to execute
      * @return Returns unmasked command line and argument to execute
      */
     protected List<String> getCommandAndArgumentsToExecute(final FileSystem fileSystem, final Collection<String> commandLineAndArguments) {
         final List<String> cla = new ArrayList<>(commandLineAndArguments);
-        final String command = cla.get(0);
-        if (!command.contains("/") && !command.contains("\\")) {
-            return cla;
-        }
+        String command = cla.get(0);
+
         for (final Supplier<String> extensionSupplier: processConfiguration.getExtensionMappers()) {
             final String extension = extensionSupplier.get();
             if (extension == null) {
                 continue;
             }
-            if (Files.isRegularFile(fileSystem.getPath(command + "." + extension))) {
-                LOGGER.debug("Map extension {} provided by {}", extension, extensionSupplier);
-                cla.set(0, command + "." + extension);
+            final Path commandPath;
+            final String commandToResolve = command + "." + extension;
+            if (processConfiguration.getWorkDirectory().isPresent()) {
+                commandPath = fileSystem.getPath(processConfiguration.getWorkDirectory().get()).resolve(commandToResolve);
+            } else {
+                commandPath = fileSystem.getPath(commandToResolve);
+            }
+            if (Files.isRegularFile(commandPath)) {
+                LOGGER.debug("Map extension {} provided by {} [{}]", extension, extensionSupplier, commandPath);
+                command += "." + extension;
                 break;
             }
         }
+        if (processConfiguration.isExecuteInWorkDirectory()) {
+            if ("/".equals(fileSystem.getSeparator())) {
+                if (!command.contains("/")) {
+                    LOGGER.trace("Added ./ to command");
+                    command = "./" + command;
+                }
+            } else if (command.startsWith("..")) {
+                LOGGER.trace("Add work work directory to command");
+                command = processConfiguration.getWorkDirectory().get() + "\\" + command;
+            }
+        } else {
+            if (processConfiguration.getWorkDirectory().isPresent()) {
+                if (!"/".equals(fileSystem.getSeparator()) && !command.contains(":")) {
+                    LOGGER.trace("Add work work directory to command");
+                    command = processConfiguration.getWorkDirectory().get() + "\\" + command;
+                }
+            }
+        }
+        cla.set(0, command);
         return cla;
     }
 

@@ -1,6 +1,7 @@
 package com.platformlib.test.docker.ssh;
 
 import com.platformlib.process.api.OperationSystemProcess;
+import com.platformlib.process.api.ProcessInstance;
 import com.platformlib.process.configurator.ProcessOutputConfigurator;
 import com.platformlib.process.configurator.ProcessOutputLoggerConfigurator;
 import com.platformlib.process.factory.ProcessBuilders;
@@ -23,7 +24,9 @@ public class DockerSshServer {
     private static OperationSystemProcess dockerProcess;
     public static final int DOCKER_SSH_PORT = 2222;
 
-    public static void startDockerSshServer() {
+    private static final String DOCKER_CONTAINER_NAME = "openssh-server";
+
+    public static String startDockerSshServer() {
         final Path sshPublicKeysPath;
         try {
             sshPublicKeysPath = Paths.get(Objects.requireNonNull(DockerSshServer.class.getResource("/ssh-public-keys")).toURI());
@@ -47,7 +50,7 @@ public class DockerSshServer {
                         "docker",
                         "run",
                         "--net", "host",
-                        "--name=openssh-server",
+                        "--name=" + DOCKER_CONTAINER_NAME,
                         "--hostname=openssh-server",
                         "-e", "PUID=1000",
                         "-e", "PGID=1000",
@@ -71,18 +74,25 @@ public class DockerSshServer {
             //TODO Check for open port instead of waiting
             Thread.sleep(1000 );
             LOGGER.debug("The docker container has been started");
+
+            final ProcessInstance dockerContainerIdProcess = ProcessBuilders.newProcessBuilder(LocalProcessSpec.LOCAL_COMMAND)
+                    .logger(logger -> logger.logger(LOGGER))
+                    .logger(ProcessOutputLoggerConfigurator::unlimited)
+                    .processInstance(ProcessOutputConfigurator::unlimited)
+                    .commandAndArguments(
+                            "docker",
+                            "ps",
+                            "--filter", "name=" + DOCKER_CONTAINER_NAME,
+                            "-q"
+                    ).build()
+                    .execute().toCompletableFuture().join();
+            if (dockerContainerIdProcess.getExitCode() != 0) {
+                throw new IllegalStateException("Unable to get container ID");
+            }
+            return dockerContainerIdProcess.getStdOut().stream().findFirst().orElseThrow(IllegalStateException::new);
         } catch (final InterruptedException interruptedException) {
             throw new IllegalStateException("Docker container starting has been interrupted", interruptedException);
         }
-
-/*
-                        "-v", "/path/to/appdata/config:/config",
-                        "-e", "PUBLIC_KEY=yourpublickey",
-                        "  -e PUBLIC_KEY_FILE=/path/to/file `#optional` \\\n" +
-                        "  -e PUBLIC_KEY_DIR=/path/to/directory/containing/_only_/pubkeys `#optional` \\\n" +
-                        "  -e SUDO_ACCESS=false `#optional` \\\n" +
-
- */
     }
 
     public static void stopDockerSshServer() {

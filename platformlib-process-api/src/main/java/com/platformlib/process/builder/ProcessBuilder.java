@@ -132,6 +132,14 @@ public interface ProcessBuilder {
     ProcessBuilder workDirectory(Path workDirectory);
 
     /**
+     * Execute command in work directory.
+     * For UNIX like OS it means adding ./ to command.
+     *
+     * @return Returns this process builder
+     */
+    ProcessBuilder executeInWorkDirectory();
+
+    /**
      * Add env variables.
      * @param envVariables env variables
      * @return Returns this process builder

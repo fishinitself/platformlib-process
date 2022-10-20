@@ -3,6 +3,7 @@ package com.platformlib.process.local;
 import com.platformlib.process.api.OperationSystemProcess;
 import com.platformlib.process.api.ProcessInstance;
 import com.platformlib.process.builder.ProcessBuilder;
+import com.platformlib.process.configurator.ProcessOutputConfigurator;
 import com.platformlib.process.enums.ProcessThreadType;
 import com.platformlib.process.factory.ProcessBuilders;
 import com.platformlib.process.local.specification.LocalProcessSpec;
@@ -11,15 +12,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,10 +36,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -94,6 +101,65 @@ class LocalProcessTest {
         } finally {
             Files.delete(tempDirectory);
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"one", "two"})
+    @DisplayName("Test run application in working directory")
+    void testExecuteInWorkDirectory(final String scriptNameSuffix) throws URISyntaxException {
+        final Path workDirectory = Paths.get(Objects.requireNonNull(LocalProcessTest.class.getResource("/test-work-directory")).toURI());
+        final ProcessBuilder processBuilder = ProcessBuilders.newProcessBuilder(LocalProcessSpec.LOCAL_COMMAND)
+                .workDirectory(workDirectory)
+                .executeInWorkDirectory()
+                .processInstance(ProcessOutputConfigurator::unlimited)
+                .defaultExtensionMapping();
+        final ProcessInstance processInstance = processBuilder.build().execute("script-" + scriptNameSuffix).toCompletableFuture().join();
+        assertThat(processInstance.getExitCode()).isEqualTo(0);
+        assertThat(processInstance.getStdOut()).containsExactly("Script " + scriptNameSuffix + " output");
+    }
+
+    static Stream<Arguments> withPathInWorkDirectoryTestData() {
+        return Stream.of(
+                Arguments.of("one", true),
+                Arguments.of("two", true),
+                Arguments.of("one", false),
+                Arguments.of("two", false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("withPathInWorkDirectoryTestData")
+    @DisplayName("Test run application in working directory with absolute path")
+    void testExecuteWithAbsolutePathInWorkDirectory(final String scriptNameSuffix, final boolean executeInWorkDirectory) throws URISyntaxException {
+        final Path workDirectory = Paths.get(Objects.requireNonNull(LocalProcessTest.class.getResource("/groovy-scripts")).toURI());
+        final Path scriptPath = Paths.get(Objects.requireNonNull(LocalProcessTest.class.getResource("/test-work-directory")).toURI());
+        ProcessBuilder processBuilder = ProcessBuilders.newProcessBuilder(LocalProcessSpec.LOCAL_COMMAND)
+                .workDirectory(workDirectory)
+                .processInstance(ProcessOutputConfigurator::unlimited)
+                .defaultExtensionMapping();
+        if (executeInWorkDirectory) {
+            processBuilder = processBuilder.executeInWorkDirectory(); // Test that setting this parameter doesn't affect execution because of different from work directory path
+        }
+        final ProcessInstance processInstance = processBuilder.build().execute(scriptPath + File.separator + "script-" + scriptNameSuffix).toCompletableFuture().join();
+        assertThat(processInstance.getExitCode()).isEqualTo(0);
+        assertThat(processInstance.getStdOut()).containsExactly("Script " + scriptNameSuffix + " output");
+    }
+
+    @ParameterizedTest
+    @MethodSource("withPathInWorkDirectoryTestData")
+    @DisplayName("Test run application in working directory with relative path")
+    void testExecuteWithRelativePathInWorkDirectory(final String scriptNameSuffix, final boolean executeInWorkDirectory) throws URISyntaxException {
+        final Path workDirectory = Paths.get(Objects.requireNonNull(LocalProcessTest.class.getResource("/groovy-scripts")).toURI());
+        ProcessBuilder processBuilder = ProcessBuilders.newProcessBuilder(LocalProcessSpec.LOCAL_COMMAND)
+                .workDirectory(workDirectory)
+                .processInstance(ProcessOutputConfigurator::unlimited)
+                .defaultExtensionMapping();
+        if (executeInWorkDirectory) {
+            processBuilder = processBuilder.executeInWorkDirectory(); // Test that setting this parameter doesn't affect execution because of different from work directory path
+        }
+        final ProcessInstance processInstance = processBuilder.build().execute(".." + File.separator + "test-work-directory" + File.separator + "script-" + scriptNameSuffix).toCompletableFuture().join();
+        assertThat(processInstance.getExitCode()).isEqualTo(0);
+        assertThat(processInstance.getStdOut()).containsExactly("Script " + scriptNameSuffix + " output");
     }
 
     @Test

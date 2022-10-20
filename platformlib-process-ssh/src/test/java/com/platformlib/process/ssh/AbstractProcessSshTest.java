@@ -5,9 +5,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractProcessSshTest {
+    static String CONTAINER_ID;
+
     @BeforeAll
     public static void startSshServer() {
-        DockerSshServer.startDockerSshServer();
+        CONTAINER_ID = DockerSshServer.startDockerSshServer();
     }
 
     @AfterAll

@@ -4,8 +4,8 @@ import com.platformlib.process.configuration.output.ProcessOutputConfiguration;
 
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,7 +64,7 @@ public class DefaultProcessOutput implements ProcessOutput, Consumer<String> {
         return Stream.concat(headMax.stream(), tailMax.stream().skip(tailSize > 0 && tailMax.size() > tailSize ? 1 : 0)).collect(Collectors.toList());
     }
 
-    private static class LimitedQueue<E> extends LinkedList<E> {
+    private static class LimitedQueue<E> extends ConcurrentLinkedQueue<E> {
         private final int limit;
 
         LimitedQueue(final int limit) {

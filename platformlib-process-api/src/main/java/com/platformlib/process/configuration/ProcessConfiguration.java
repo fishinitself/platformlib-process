@@ -59,6 +59,12 @@ public interface ProcessConfiguration {
     Optional<String> getWorkDirectory();
 
     /**
+     * Execute command in work directory or not.
+     * @return Returns true if command has to be executed in work directory, false otherwise
+     */
+    boolean isExecuteInWorkDirectory();
+
+    /**
      * Get process environment variables.
      * @return Returns process environment variables
      */
